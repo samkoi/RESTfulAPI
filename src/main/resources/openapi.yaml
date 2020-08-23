@@ -1,0 +1,945 @@
+# open api speicification document - header with version
+# document should be named openapi.yaml or openapi.json
+openapi: "3.0.4"
+# general information
+info:
+  title: Beveage Service
+  version: "1.0"
+  description: | # | for multi line description
+    Summer is coming and we are all looking forward to having a barbecue with friends.
+    For a nice barbecue, we also need some refreshing drinks. Therefore, we want to start a
+    new business where we sell beverages and deliver them to people.
+  contact:
+    name: Group 9
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:9999/v1
+    description: Development Server
+# resources (one of the REST principles)
+tags:
+  - name: login
+    description: Login Authentication
+  - name: shared
+    description: Everything a customer and an employee can execute
+  - name: customer
+    description: Everything for the customer
+  - name: employee
+    description: Everything for the employees
+components:
+  schemas:
+    orderDTO:
+      type: object
+      required:
+        - orderId
+      properties:
+        orderId:
+          type: number
+        positions:
+          type: array
+          items:
+            $ref: "#/components/schemas/orderItemDTO"
+        price:
+          type: number
+        OrderStatus:
+          type: string
+          enum: [SUBMITTED, PROCESSED]
+      xml:
+        name: order
+    orderItemDTO:
+      type: object
+      required:
+        - number
+        - beverage
+        - quantity
+      properties:
+        number:
+          type: number
+        beverage:
+          $ref: "#/components/schemas/beverageDTO"
+        quantity:
+          type: number
+      xml:
+        name: orderItem
+    beverageDTO:
+      type: object
+      required:
+        - Bottle
+      properties:
+        id:
+          type: number
+        price:
+          type: number
+        inStock:
+          type: boolean
+        Bottle:
+          $ref: "#/components/schemas/beverageDTO"
+        noOfBottles:
+          type: number
+      xml:
+        name: beverage
+    BottlePostDTO:
+      type: object
+      required:
+        - price
+        - inStock
+        - name
+        - volume
+      properties:
+        price:
+          type: number
+        inStock:
+          type: boolean
+        name:
+          type: string
+        volume:
+          type: number
+        isAlcoholic:
+          type: boolean
+        volumePercent:
+          type: number
+        supplier:
+          type: string
+      xml:
+        name: bottle
+    CratePostDTO:
+      type: object
+      required:
+        - price
+        - inStock
+        - bottleId
+      properties:
+        price:
+          type: number
+        inStock:
+          type: number
+        bottleId:
+          type: number
+        noOfBottles:
+          type: number
+      xml:
+        name: crate
+    errorMessage:
+      type: object
+      required:
+        - errorType
+      properties:
+        errorType:
+          description: error category, should be extended
+          enum:
+            - INVALID_PARAMETER
+        message:
+          type: string
+          description: A detailed error description
+    pagination:
+      type: object
+      properties:
+        page:
+          type: number
+        noOfPages:
+          type: number
+        first:
+          type: string
+        previous:
+          type: string
+        next:
+          type: string
+        last:
+          type: string
+    paginatedBeverages:
+      type: object
+      properties:
+        pagination:
+          $ref: "#/components/schemas/pagination"
+        beverages:
+          type: array
+          items:
+            $ref: "#/components/schemas/beverageDTO"
+        href:
+          type: string
+    paginatedOrders:
+      type: object
+      properties:
+        pagination:
+          $ref: "#/components/schemas/pagination"
+        beverages:
+          type: array
+          items:
+            $ref: "#/components/schemas/orderDTO"
+        href:
+          type: string
+    paginatedOrderItems:
+      type: object
+      properties:
+        pagination:
+          $ref: "#/components/schemas/pagination"
+        beverages:
+          type: array
+          items:
+            $ref: "#/components/schemas/orderItemDTO"
+        href:
+          type: string
+    CustomerDTO:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - userName
+      properties:
+        userName:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+
+paths:
+  /customer/register:
+    post:
+      tags:
+        - Register
+      summary: create a new customer.
+      parameters:
+        - name: userName
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: firstName
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: lastName
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Customer successfully registered.
+        400:
+          description: There is some internal issue while customer registration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /customer/{custId}:
+    get:
+      tags:
+        - Register
+      summary: Get Customer by Id
+      parameters:
+        - name: custId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          description: "#/components/schemas/CustomerDTO"
+        400:
+          description: Can not retrieve customer by specified Id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /customer/{customerId}:
+    description: delete a customer from the list
+    parameters:
+      - name: customerId
+        required: true
+        in: path
+        schema:
+          type: number
+    delete:
+      tags:
+        - Register
+      summary: delete customer by id
+      responses:
+        200:
+          description: Employee with specific Id is deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerDTO"
+        400:
+          description: customer with specific Id is already deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /customer/login:
+    get:
+      tags:
+        - login
+      summary: Authenticate User
+      parameters:
+        - name: firstName
+          in: query
+          schema:
+            type: string
+            default: customer
+        - name: lastName
+          in: query
+          schema:
+            type: string
+            default: password
+      responses:
+        200:
+          description: Authenticated customer
+        400:
+          description: login failed for customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /employee/register:
+    post:
+      tags:
+        - Register
+      summary: create a new employee.
+      parameters:
+        - name: userName
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: firstName
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: lastName
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Employee successfully registered.
+        400:
+          description: There is some internal issue while employee registration.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /employee/{empId}:
+    get:
+      tags:
+        - Register
+      summary: Get employee by Id
+      parameters:
+        - name: empId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          description: Retrieval of employee by specified id successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerDTO"
+        400:
+          description: Can not retrieve employee by specified Id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /employee/{employeeId}:
+    description: delete a employee from the list
+    parameters:
+      - name: employeeId
+        required: true
+        in: path
+        schema:
+          type: number
+    delete:
+      tags:
+        - Register
+      summary: delete employee by id
+      responses:
+        200:
+          description: delete employee by Id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerDTO"
+        400:
+          description: Employee with specific Id is deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /employee/login:
+    get:
+      tags:
+        - login
+      summary: Authenticate Employee
+      parameters:
+        - name: firstName
+          in: query
+          schema:
+            type: string
+            default: admin
+        - name: lastName
+          in: query
+          schema:
+            type: string
+            default: admin
+      responses:
+        200:
+          description: Authenticated Employee
+        400:
+          description: login failed for employee.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /beverage:
+    description: A catalog of all beverages
+    # Operations/methods via standard HTTP verbs
+    get:
+      tags:
+        - shared
+      summary: Get beverage on a specific page
+      # request parameters
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: number
+            default: 1
+        - name: pageLimit
+          in: query
+          schema:
+            type: number
+            default: 10
+        - name: search
+          in: query
+          description: simple string contains search [not case sensitive]
+          schema:
+            type: string
+        - name: filter
+          in: query
+          description: The filter/sort function you want to apply
+          schema:
+            type: string
+            enum: [MaxPrice, MinPrice, Alcoholic, VolumePercent]
+      # possible responses and their parameters
+      responses:
+        200:
+          description: beverages on the page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/paginatedBeverages"
+        400:
+          description: A bad request initiated by the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /order:
+    description: A catalog of all orders
+    # Operations/methods via standard HTTP verbs
+    get:
+      tags:
+        - shared
+      summary: Get order on a specific page
+      # request parameters
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: number
+            default: 1
+        - name: pageLimit
+          in: query
+          schema:
+            type: number
+            default: 10
+        - name: search
+          in: query
+          description: simple string contains search [not case sensitive]
+          schema:
+            type: string
+        - name: filter
+          in: query
+          description: The filter/Sort function you want to apply
+          schema:
+            type: string
+            enum: [MaxPrice, MinPrice, OrderProcessed, OrderSubmitted]
+      # possible responses and their parameters
+      responses:
+        200:
+          description: orders on the page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/paginatedOrders"
+        400:
+          description: A bad request initiated by the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+    post:
+      tags:
+        - customer
+      summary: Create an order
+      responses:
+        201:
+          description: order created
+        400:
+          description: Message body was empty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /order/{orderId}:
+    description: delete an order
+    parameters:
+      - name: orderId
+        # path parameters must be always mandatory!!
+        required: true
+        in: path
+        schema:
+          type: number
+    get:
+      tags:
+        - shared
+      summary: Get a single order by id
+      # possible responses and their parameters
+      responses:
+        200:
+          description: get a specific order description
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/orderDTO"
+        400:
+          description: A bad request initiated by the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+    put:
+      tags:
+        - employee
+      summary: set order to processed
+      responses:
+        200:
+          description: Updating an order
+          content:
+            application/json:
+              # response schema
+              schema:
+                $ref: "#/components/schemas/orderDTO"
+        400:
+          description: Message body was empty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+        404:
+          description: Not found
+    delete:
+      tags:
+        - employee
+      summary: Delete order
+      responses:
+        200:
+          description: order deleted
+        404:
+          description: order not found
+  /beverage/bottle/:
+    description: A catalog of all bottles
+    # Operations/methods via standard HTTP verbs
+    get:
+      tags:
+        - shared
+      summary: Get bottles on a specific page
+      # request parameters
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: number
+            default: 1
+        - name: pageLimit
+          in: query
+          schema:
+            type: number
+            default: 10
+      # possible responses and their parameters
+      responses:
+        200:
+          description: bottles on the page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/paginatedBeverages"
+        400:
+          description: A bad request initiated by the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /beverage/bottle/{bottleId}:
+    # this parameter definition is valid for all subsequent methods
+    parameters:
+      - name: bottleId
+        # path parameters must be always mandatory!!
+        required: true
+        in: path
+        schema:
+          type: number
+    get:
+      tags:
+        - shared
+      summary: Get a single bottle by id
+      # possible responses and their parameters
+      responses:
+        200:
+          description: get a specific bottle description
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/beverageDTO"
+        400:
+          description: A bad request initiated by the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+    put:
+      tags:
+        - employee
+      summary: Update specific bottle
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BottlePostDTO"
+      responses:
+        200:
+          description: Updating a bottle
+          content:
+            application/json:
+              # response schema
+              schema:
+                $ref: "#/components/schemas/beverageDTO"
+        400:
+          description: Message body was empty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+        404:
+          description: Not found
+    delete:
+      tags:
+        - employee
+      summary: Delete bottle
+      responses:
+        200:
+          description: bottle deleted
+        404:
+          description: bottle not found
+  /beverage/crate/:
+    description: A catalog of all crates
+    # Operations/methods via standard HTTP verbs
+    get:
+      tags:
+        - shared
+      summary: Get bottles on a specific page
+      # request parameters
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: number
+            default: 1
+        - name: pageLimit
+          in: query
+          schema:
+            type: number
+            default: 10
+      # possible responses and their parameters
+      responses:
+        200:
+          description: crates on the page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/paginatedBeverages"
+        400:
+          description: A bad request initiated by the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /beverage/crate/{crateId}:
+    # this parameter definition is valid for all subsequent methods
+    parameters:
+      - name: crateId
+        # path parameters must be always mandatory!!
+        required: true
+        in: path
+        schema:
+          type: number
+    get:
+      tags:
+        - shared
+      summary: Get a single crate by id
+      # possible responses and their parameters
+      responses:
+        200:
+          description: get a specific crate description
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/beverageDTO"
+        400:
+          description: A bad request initiated by the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+    put:
+      tags:
+        - employee
+      summary: Update specific crate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CratePostDTO"
+      responses:
+        200:
+          description: Updating a crate
+          content:
+            application/json:
+              # response schema
+              schema:
+                $ref: "#/components/schemas/beverageDTO"
+        400:
+          description: Message body was empty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+        404:
+          description: Not found
+    delete:
+      tags:
+        - employee
+      summary: Delete crate
+      responses:
+        200:
+          description: crate deleted
+        404:
+          description: crate not found
+  /orderitem/{orderId}/{orderItemNumber}:
+    # this parameter definition is valid for all subsequent methods
+    parameters:
+      - name: orderId
+        # path parameters must be always mandatory!!
+        required: true
+        in: path
+        schema:
+          type: number
+      - name: orderItemNumber
+        # path parameters must be always mandatory!!
+        required: true
+        in: path
+        schema:
+          type: number
+      - name: newOrderAmount
+        # path parameters must be always mandatory!!
+        required: false
+        in: query
+        schema:
+          type: number
+    get:
+      tags:
+        - shared
+      summary: Get a single order item of an order
+      # possible responses and their parameters
+      responses:
+        200:
+          description: get a specific orderitem description
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/orderItemDTO"
+        400:
+          description: A bad request initiated by the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+    put:
+      tags:
+        - customer
+      summary: Update specific order item
+      responses:
+        200:
+          description: Updating an order item
+          content:
+            application/json:
+              # response schema
+              schema:
+                $ref: "#/components/schemas/orderItemDTO"
+        400:
+          description: Message body was empty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+        404:
+          description: Not found
+    delete:
+      tags:
+        - customer
+      summary: Delete order Item
+      responses:
+        200:
+          description: order item deleted
+        404:
+          description: order item not found
+  /beverage/bottle:
+    post:
+      tags:
+        - employee
+      summary: Create a bottle
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BottlePostDTO"
+      responses:
+        201:
+          description: bottle created
+        400:
+          description: Message body was empty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /beverage/crate:
+    post:
+      tags:
+        - employee
+      summary: Create a crate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CratePostDTO"
+      responses:
+        201:
+          description: crate created
+        400:
+          description: Message body was empty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /orderitem/bottle/{orderId}/{bottleId}:
+    parameters:
+      - name: orderId
+        # path parameters must be always mandatory!!
+        required: true
+        in: path
+        schema:
+          type: number
+      - name: bottleId
+        # path parameters must be always mandatory!!
+        required: true
+        in: path
+        schema:
+          type: number
+      - name: amount
+        # path parameters must be always mandatory!!
+        required: false
+        in: query
+        schema:
+          type: number
+    post:
+      tags:
+        - customer
+      summary: Create an order item for a bottle
+      responses:
+        201:
+          description: create order Item
+        400:
+          description: Message body was empty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /orderitem/crate/{orderId}/{crateId}:
+    parameters:
+      - name: orderId
+        # path parameters must be always mandatory!!
+        required: true
+        in: path
+        schema:
+          type: number
+      - name: crateId
+        # path parameters must be always mandatory!!
+        required: true
+        in: path
+        schema:
+          type: number
+      - name: amount
+        # path parameters must be always mandatory!!
+        required: false
+        in: query
+        schema:
+          type: number
+    post:
+      tags:
+        - customer
+      summary: Create an order item for a crate
+      responses:
+        201:
+          description: create order Item
+        400:
+          description: Message body was empty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
+  /orderitem/{orderId}:
+    # this parameter definition is valid for all subsequent methods
+    parameters:
+      - name: orderId
+        # path parameters must be always mandatory!!
+        required: true
+        in: path
+        schema:
+          type: number
+    get:
+      tags:
+        - shared
+      summary: Get a all order items of an order
+      # possible responses and their parameters
+      responses:
+        200:
+          description: get all order items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/orderItemDTO"
+        400:
+          description: A bad request initiated by the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorMessage"
