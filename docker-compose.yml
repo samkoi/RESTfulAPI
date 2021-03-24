@@ -1,0 +1,61 @@
+version: "3.2"
+services:
+    a1:
+        image: alpine
+        container_name: a1
+        tty: true
+        networks:
+            - a-net
+    beverageservice:
+        build:
+            context: .
+            dockerfile: Dockerfile-multi-beverage
+        container_name: beverageservice
+        networks:
+            - a-net
+        depends_on:
+            - db
+        ports:
+            - 8080:9999
+        environment:
+            - SERVICE=beverage
+            - SERVER_URI=http://localhost:9999/v1
+        links:
+          - "db:9999/v1"
+    managementservice:
+        build:
+            context: .
+            dockerfile: Dockerfile-multi-management
+        container_name: managementservice
+        networks:
+            - a-net
+        depends_on:
+            - db
+        ports:
+            - 8090:9999
+        environment:
+            - SERVICE=management
+            - SERVER_URI=http://localhost:9999/v1
+        links:
+          - "db:9999/v1"
+    db:
+        build:
+            context: .
+            dockerfile: Dockerfile-multi-dbhandler
+        container_name: db
+        volumes:
+          - type: volume
+            source: a-vol
+            target: /root/dev/BeverageService
+        networks:
+            - a-net
+        environment:
+            - SERVICE=dbhandler
+            - SERVER_URI=http://db:9999/v1
+        depends_on:
+            - a1
+volumes:
+    a-vol:
+networks:
+    a-net:
+        driver: bridge

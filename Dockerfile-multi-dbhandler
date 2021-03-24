@@ -1,0 +1,17 @@
+#Image
+FROM openjdk:11.0.5 AS builder
+#Enviroment Variable
+ENV APP_HOME=/root/dev/BeverageService
+# Working Directory
+WORKDIR $APP_HOME
+#COPY ALL THE STUFF
+COPY . $APP_HOME
+COPY data.json /root/dev/BeverageService
+#Run the build
+RUN ./gradlew build
+
+
+FROM openjdk:11.0.5-jre
+WORKDIR /root/
+COPY  --from=builder /root/dev/BeverageService/build/libs/BeverageService-all.jar .
+ENTRYPOINT ["java",  "-Dspring.profiles.active=localdocker",  "-jar", "BeverageService-all.jar", "Server.jar"]
